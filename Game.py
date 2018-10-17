@@ -1,6 +1,7 @@
 import Character
 #import uncle_gui as gui
 #from enum import Enum
+#from uncle_gui import GUI
 
 class Game:
     def __init__(self):
@@ -10,6 +11,7 @@ class Game:
         self.stage = "PLACE" # Enum("PLACE", "SELECT", "MOVE", "BUILD")
         self.player1.isTurn = True
         self.gameOver = False
+        #gui = GUI()
 
     def check_game_over(self):
         # check win/loss conditions
