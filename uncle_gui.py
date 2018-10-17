@@ -3,21 +3,10 @@ from tkinter import *
 from Game import *
 #BIGJUICE
 HIGHLIGHT_COLOR = 'red'
-COLOR_P1 = 'deep sky blue'
-COLOR_P2 = 'RoyalBlue3'
+PLAYER_COLORS = {'P1': 'deep sky blue', 'P2': 'RoyalBlue3'}
 TILE_COLORS = ['SpringGreen4', 'SpringGreen3']
-#STAGE = ['select','move', 'build']
-
 TILE_OFFSET = 50
 TILE_SIZE = 100
-def two_D_list_from_one_D(l):
-    return [[l[i+5*j] for i in range(5)] for j in range(5)]
-def one_D_list_from_two_D(l):
-    l_new = []
-    for i in range(5):
-        for j in range(5):
-            l_new.append(l[i][j])
-    return l_new
 
 class GUI:
     '''
@@ -25,12 +14,11 @@ class GUI:
     and valid movement spaces for those characters
     '''
     def __init__(self,number_player1_workers=0,number_player2_workers=0):
-        #tile_grid = [[0 for i in range(5)] for j in range(5)]
-        self.tile_grid = [0 for i in range(25)] #going 1d for now i guess (cuz thats how canvas stores em anyway), also realizing i can just append oh well
+        self.tile_grid = [0 for i in range(25)] 
         self.current_player_locations = []
-        # or
-        #self.current_player
-        #self.player_locations
+        self.stage = ''
+        self.game = Game()
+        self.moved_from_tile = 0
         self.number_player2_workers = number_player2_workers
         self.number_player1_workers = number_player1_workers
         self.total_workers = number_player1_workers + number_player2_workers
@@ -50,33 +38,32 @@ class GUI:
     def click_tile(self,event):
         if self.canvas.find_withtag(CURRENT): 
             tile_clicked = event.widget.find_closest(event.x,event.y)[0] - 1
-            #BIGJUICYvalid_tiles = valid_spaces(tile_clicked)
+            self.stage = self.game.get_stage()
+            valid_tiles = self.game.valid_spaces(tile_clicked)
             print(tile_clicked)
-            if self.STAGE == 'place':
+            if self.stage == 'PLACE':
                 if self.initial_placement_p1 > 0:
                     #BIGJUICE if (valid placement):
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=COLOR_P1)
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
                     self.initial_placement_p1 -= 1
                 elif self.initial_placement_p2 > 0:
                     #BIGJUICE if (valid placement):
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=COLOR_P2)
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
                     self.initial_placement_p2 -= 1
-            elif self.STAGE=='select':
-                if not self.valid_character_select:#and if tile clicked on has your dude on it
-                    self.valid_character_select = True
-                    if tile_clicked in self.valid_tile:
-                        self.valid_tile.remove(tile_clicked)
-                    #if tile is reachable:
-                    for tile in self.valid_tile:
-                        self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR) 
-                elif self.valid_character_select:
-                    if tile_clicked in self.valid_tile:
-                        self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
-                        #print(self.canvas.itemconfig(self.tile_grid[tile_clicked]))
-                    self.valid_character_select = False
-            elif self.STAGE=='move': 
+            elif self.stage=='SELECT':
+                for tile in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR)
+                    self.moved_from_tile = tile_clicked 
+            elif self.stage=='MOVE': 
+               if tile_clicked in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=TILE_COLORS[0])
+                    
+            elif self.stage=='BUILD':
+                if tile_clicked in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='blue')
+                    
 
-            elif self.STAGE=='build': 
     def init_tiles(self): #make 5x5 array of tiles and make them clickable
         self.canvas.bind
         self.canvas.grid()
@@ -90,6 +77,6 @@ class GUI:
                 #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Enter>', self.enter_tile)
                 #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Leave>', self.leave_tile)
         self.canvas.bind("<Button-1>", self.click_tile)
-        self.root.wm_title("Santoroni")s
+        self.root.wm_title("Santoroni")
 if __name__ == '__main__':
     gui = GUI(2,2)
