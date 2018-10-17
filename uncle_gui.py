@@ -1,81 +1,82 @@
 import tkinter as tk
 from tkinter import *
+from Game import *
+#BIGJUICE
 HIGHLIGHT_COLOR = 'red'
+PLAYER_COLORS = {'P1': 'deep sky blue', 'P2': 'RoyalBlue3'}
 TILE_COLORS = ['SpringGreen4', 'SpringGreen3']
 TILE_OFFSET = 50
 TILE_SIZE = 100
-def two_D_list_from_one_D(l):
-    return [[l[i+5*j] for i in range(5)] for j in range(5)]
-def one_D_list_from_two_D(l):
-    l_new = []
-    for i in range(5):
-        for j in range(5):
-            l_new.append(l[i][j])
-    return l_new
 
 class GUI:
     '''
     Initializes 5x5 grid in TKinter. Needs to be given player locations
     and valid movement spaces for those characters
     '''
-    def __init__(self):
-        #tile_grid = [[0 for i in range(5)] for j in range(5)]
-        self.tile_grid = [0 for i in range(25)] #going 1d for now i guess (cuz thats how canvas stores em anyway), also realizing i can just append oh well
+    def __init__(self,number_player1_workers=0,number_player2_workers=0):
+        self.tile_grid = [0 for i in range(25)] 
         self.current_player_locations = []
-        # or
-        #self.current_player
-        #self.player_locations
-        self.valid_movement_spaces = []
-        self.valid_tile = set()
-        self.valid_character_select = False
+        self.stage = ''
+        self.game = Game()
+        self.moved_from_tile = 0
+        self.number_player2_workers = number_player2_workers
+        self.number_player1_workers = number_player1_workers
+        self.total_workers = number_player1_workers + number_player2_workers
+        self.initial_placement = True
+        self.initial_placement_p1 = number_player1_workers
+        self.initial_placement_p2 = number_player2_workers
         self.root = tk.Tk()
         self.canvas = tk.Canvas(self.root, width=600, height=600, borderwidth=0, highlightthickness=0, bg="black")    
+        self.init_tiles()
+        self.root.mainloop()
+#    def enter_tile(self,event):
+#        if self.canvas.find_withtag(CURRENT):
+#            self.canvas.itemconfig(CURRENT, fill="blue")          
+#    def leave_tile(self,event):
+#        if self.canvas.find_withtag(CURRENT):
+#            self.canvas.itemconfig(CURRENT, fill="SpringGreen3")     
+    def click_tile(self,event):
+        if self.canvas.find_withtag(CURRENT): 
+            tile_clicked = event.widget.find_closest(event.x,event.y)[0] - 1
+            self.stage = self.game.get_stage()
+            valid_tiles = self.game.valid_spaces(tile_clicked)
+            print(tile_clicked)
+            if self.stage == 'PLACE':
+                if self.initial_placement_p1 > 0:
+                    #BIGJUICE if (valid placement):
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
+                    self.initial_placement_p1 -= 1
+                elif self.initial_placement_p2 > 0:
+                    #BIGJUICE if (valid placement):
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
+                    self.initial_placement_p2 -= 1
+            elif self.stage=='SELECT':
+                for tile in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR)
+                    self.moved_from_tile = tile_clicked 
+            elif self.stage=='MOVE': 
+               if tile_clicked in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=TILE_COLORS[0])
+                    
+            elif self.stage=='BUILD':
+                if tile_clicked in valid_tiles:
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='blue')
+                    
+
+    def init_tiles(self): #make 5x5 array of tiles and make them clickable
         self.canvas.bind
         self.canvas.grid()
-        for row in range(5): #row and column are switched oh well, fix later or never
+        for row in range(5):
             for col in range(5):
-                tile_tag = ''.join(('row',str(row),'col',str(col)))
                 self.tile_grid[col+5*row] = self.canvas.create_rectangle(TILE_OFFSET+col*TILE_SIZE,
                 TILE_OFFSET+row*TILE_SIZE,
                 TILE_OFFSET+TILE_SIZE+col*TILE_SIZE,
                 TILE_OFFSET+TILE_SIZE+row*TILE_SIZE,
-                fill=TILE_COLORS[(col+row)%2], tags=tile_tag)
-                self.canvas.tag_bind(self.tile_grid[col+5*row], '<Enter>', self.enter_tile)
-                self.canvas.tag_bind(self.tile_grid[col+5*row], '<Leave>', self.leave_tile)
+                fill=TILE_COLORS[(col+row)%2],tag='tile')
+                #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Enter>', self.enter_tile)
+                #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Leave>', self.leave_tile)
         self.canvas.bind("<Button-1>", self.click_tile)
         self.root.wm_title("Santoroni")
-        self.root.mainloop()
-    def enter_tile(self,event):
-        if self.canvas.find_withtag(CURRENT):
-            self.canvas.itemconfig(CURRENT, fill="blue")          
-    def leave_tile(self,event):
-        if self.canvas.find_withtag(CURRENT):
-            self.canvas.itemconfig(CURRENT, fill="SpringGreen3") 
-    def click_tile(self,event):
-        if self.canvas.find_withtag(CURRENT): 
-            tile_clicked = event.widget.find_closest(event.x,event.y)[0] - 1
-            print(tile_clicked)
-            if not self.valid_character_select:#and if tile clicked on has your dude on it
-                self.valid_character_select = True
-                self.valid_tile.clear() 
-                #self.valid_tile = set()
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y-TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y-TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x, event.y-TILE_SIZE)[0]-1)
-                if tile_clicked in self.valid_tile:
-                    self.valid_tile.remove(tile_clicked)
-                #if tile is reachable:
-                for tile in self.valid_tile:
-                    self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR) 
-            elif self.valid_character_select:
-                if tile_clicked in self.valid_tile:
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
-                self.valid_character_select = False
-
 if __name__ == '__main__':
-    gui = GUI()
+    gui = GUI(2,2)
