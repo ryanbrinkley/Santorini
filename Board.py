@@ -1,4 +1,4 @@
-class Board:
+"""class Board:
 
     def __init__(self):
         self.spaces = [[Space(i, j) for i in range(5)] for j in range(5)]
@@ -34,4 +34,4 @@ class Space:
 
     def increment_size(self):
         if self.buildingSize < self.maxBuildingSize:
-            self.buildingSize += 1
+            self.buildingSize += 1"""
