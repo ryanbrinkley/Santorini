@@ -56,7 +56,7 @@ class GUI:
             tile_clicked = event.widget.find_closest(event.x,event.y)[0] - 1
             #BIGJUICYvalid_tiles = valid_spaces(tile_clicked)
             print(tile_clicked)
-            if self.initial_placement:
+            if self.STAGE == 'place':
                 if self.initial_placement_p1 > 0:
                     #BIGJUICE if (valid placement):
                     self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=COLOR_P1)
@@ -67,33 +67,21 @@ class GUI:
                     self.initial_placement_p2 -= 1
                     if self.initial_placement_p2 == 0:
                         self.initial_placement = False
-                #infoText = 'p1-1'
-                #textID = self.canvas.create_text(0,0, text=infoText, anchor="nw", fill="yellow")
-                #xOffset = self.findXCenter(self.canvas, textID)
-                #self.canvas.move(textID, xOffset, 0)
-            elif self.stage=='select' #select char
-            elif not self.valid_character_select:#and if tile clicked on has your dude on it
-                self.valid_character_select = True
-                self.valid_tile.clear() 
-                #self.valid_tile = set()
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x-TILE_SIZE, event.y-TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x+TILE_SIZE, event.y-TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x, event.y+TILE_SIZE)[0]-1)
-                self.valid_tile.add(event.widget.find_closest(event.x, event.y-TILE_SIZE)[0]-1)
-                if tile_clicked in self.valid_tile:
-                    self.valid_tile.remove(tile_clicked)
-                #if tile is reachable:
-                for tile in self.valid_tile:
-                    self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR) 
-            elif self.valid_character_select:
-                if tile_clicked in self.valid_tile:
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
-                    #print(self.canvas.itemconfig(self.tile_grid[tile_clicked]))
-                self.valid_character_select = False
+            elif self.STAGE=='select':
+                if not self.valid_character_select:#and if tile clicked on has your dude on it
+                    self.valid_character_select = True
+                    if tile_clicked in self.valid_tile:
+                        self.valid_tile.remove(tile_clicked)
+                    #if tile is reachable:
+                    for tile in self.valid_tile:
+                        self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR) 
+                elif self.valid_character_select:
+                    if tile_clicked in self.valid_tile:
+                        self.canvas.itemconfig(self.tile_grid[tile_clicked], fill='yellow')
+                        #print(self.canvas.itemconfig(self.tile_grid[tile_clicked]))
+                    self.valid_character_select = False
+            elif self.STAGE=='move': 
+            elif self.STAGE=='build': 
     def init_tiles(self): #make 5x5 array of tiles and make them clickable
         self.canvas.bind
         self.canvas.grid()
@@ -107,10 +95,6 @@ class GUI:
                 #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Enter>', self.enter_tile)
                 #self.canvas.tag_bind(self.tile_grid[col+5*row], '<Leave>', self.leave_tile)
         self.canvas.bind("<Button-1>", self.click_tile)
-        self.root.wm_title("Santoroni")
-#    def findXCenter(self, canvas, item):
-#      coords = canvas.bbox(item)
-#      xOffset = (600 / 2) - ((coords[2] - coords[0]) / 2)
-#      return xOffset
+        self.root.wm_title("Santoroni")s
 if __name__ == '__main__':
     gui = GUI(2,2)
