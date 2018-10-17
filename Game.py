@@ -1,12 +1,6 @@
 import Character
-import uncle_gui as gui
-#from enum import Enum
-
-# p locations
-# curr player
-# char location, currplayer,
-# returns if move or build
-#       every valid space, 
+# from uncle_gui import GUI
+# from enum import Enum
 
 def coord_to_pos(x, y):
     return int(x+5*y)
@@ -21,9 +15,10 @@ class Game:
         self.spaces = [Space(i) for i in range(25)]
         self.player1 = Character.Apollo()
         self.player2 = Character.Artemis()
-        self.activePlayer = 1
+        self.activePlayer = 1 # just an int
+        self.currPlayer = self.player1
         #self.stage = "PLACE" # Enum("PLACE", "SELECT", "MOVE", "BUILD")
-        self.stage = "MOVE"
+        self.stage = "PLACE"
         self.gameOver = False
 
     def check_game_over(self):
@@ -59,7 +54,7 @@ class Game:
             for i in range(5):
                 for j in range(5):
                     space = self.spaces[coord_to_pos(i, j)]
-                    if(space.inhabited == False):
+                    if (space.inhabited == False):
                         validList.add(space.pos)
         elif self.stage == "SELECT":
             pass
@@ -80,25 +75,30 @@ class Game:
         return validList
         
 
-    def place_workers(self):
-        for i in range(self.player1.numWorkers):
-            if i % 2 == 0:
-                id = "B"
-            else:
-                id = "G"
-            self.player1.workers.append(Character.Worker(id, self.spaces[i]))
-            self.spaces[i].inhabited = True
-            self.spaces[i].inhabitant = self.player1.workers[i]
+    def place_workers(self, spaceClicked):
+        if spaceClicked in self.valid_spaces(spaceClicked):
+            n = self.currPlayer.workersLeftToPlace
 
-        for i in range(self.player2.numWorkers):
-            if i % 2 == 0:
+            self.currPlayer.workersLeftToPlace -= 1
+            if self.currPlayer.workersLeftToPlace == 0:
+                if self.activePlayer == 2:
+                    self.stage = "SELECT"
+                self.activePlayer = (self.activePlayer % 2) + 1
+                self.set_currPlayer()
+
+            id = "G"
+            if n % 2 == 0:
                 id = "B"
-            else:
-                id = "G"
-            self.player2.workers.append(Character.Worker(id, self.spaces[12+i]))
-            self.spaces[12+i].inhabited = True
-            self.spaces[12+i].inhabitant = self.player2.workers[i]
-    
+            worker = Character.Worker(id, self.spaces[spaceClicked])
+            self.currPlayer.workers.append(worker)
+            self.spaces[spaceClicked].inhabited = True
+            self.spaces[spaceClicked].inhabitant = worker
+
+    def select_worker(self, spaceClicked):
+        if spaceClicked in self.valid_spaces(spaceClicked):
+            self.currPlayer.selectedWorker = self.spaces[spaceClicked].inhabitant
+            self.stage = "MOVE"
+
     def get_player_positions(self):
         return self.player1.get_positions(), self.player2.get_positions()
 
@@ -107,6 +107,9 @@ class Game:
 
     def get_stage(self):
         return self.stage
+
+    def set_currPlayer(self):
+        self.currPlayer = self.player1 if self.activePlayer == 1 else self.player2
 
     def game_loop(self):
         while not self.gameOver:
@@ -131,7 +134,7 @@ class Game:
             self.spaces[0].build()
 
             # Current Positions (5 * y + x for 1d?)
-            self.get_player_positions()
+            # self.get_player_positions()
 
             #print board
             for i in range(5):
@@ -139,9 +142,7 @@ class Game:
                     print(self.spaces[i + (j * 5)].height, end=" ")
                 print()
 
-            print(self.activePlayer)
             self.activePlayer = (self.activePlayer % 2) + 1
-            print(self.activePlayer)
 
             self.check_game_over()
 
@@ -176,7 +177,8 @@ class Space:
 
 
 game = Game()
+# gui = GUI(2,2)
 print(Character.characterList)
 # choose chars / random chars
-game.place_workers()
+game.place_workers(10)
 game.game_loop()
