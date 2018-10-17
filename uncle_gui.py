@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import *
 from Game import *
@@ -16,8 +17,8 @@ class GUI:
     def __init__(self,number_player1_workers=0,number_player2_workers=0):
         self.tile_grid = [0 for i in range(25)] 
         self.current_player_locations = []
-        self.stage = ''
         self.game = Game()
+        self.stage = self.game.stage
         self.moved_from_tile = 0
         self.number_player2_workers = number_player2_workers
         self.number_player1_workers = number_player1_workers
@@ -41,15 +42,17 @@ class GUI:
             self.stage = self.game.get_stage()
             valid_tiles = self.game.valid_spaces(tile_clicked)
             print(tile_clicked)
+            print(self.game.stage)
+            print(self.game.currPlayer)
             if self.stage == 'PLACE':
-                if self.initial_placement_p1 > 0:
-                    #BIGJUICE if (valid placement):
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
-                    self.initial_placement_p1 -= 1
-                elif self.initial_placement_p2 > 0:
-                    #BIGJUICE if (valid placement):
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
-                    self.initial_placement_p2 -= 1
+                if tile_clicked in self.game.valid_spaces(tile_clicked):
+                        if self.initial_placement_p1 > 0:
+                                self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
+                                self.initial_placement_p1 -= 1
+                        elif self.initial_placement_p2 > 0:
+                                self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
+                                self.initial_placement_p2 -= 1
+                        self.game.place_workers(tile_clicked)
             elif self.stage=='SELECT':
                 for tile in valid_tiles:
                     self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR)
