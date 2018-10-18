@@ -120,10 +120,8 @@ class Game:
         self.stage = "MOVE"
 
     def move_worker(self, spaceClicked):
-        self.currPlayer.selectedWorker.space.free()
-        self.spaces[spaceClicked].place(self.currPlayer.selectedWorker)
-        self.currPlayer.selectedWorker = None
-        self.stage = "BUILD"
+        #worker move function returns a stage
+        self.stage = self.currPlayer.move(self.spaces[spaceClicked])
 
     def build(self, spaceClicked):
         self.spaces[spaceClicked].build()
