@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import *
 from Game import *
 
-HIGHLIGHT_COLOR = ['red', 'yellow']
+HIGHLIGHT_COLOR = 'gray25' # ['red', 'yellow']
 PLAYER_COLORS = {'P1': 'deep sky blue', 'P2': 'RoyalBlue3'}
-BUILDING_COLORS = ['purple1', 'purple3', 'purple4', 'black']
+BUILDING_COLORS = ['purple1', 'purple3', 'purple4', 'gray15']
 TILE_COLORS = ['SpringGreen4', 'SpringGreen3']
 TILE_OFFSET = 50
 TILE_SIZE = 100
@@ -47,9 +47,6 @@ class GUI:
                 self.valid_tiles = self.game.valid_spaces(tile_clicked)
 
             print(tile_clicked)
-            # print("Stage: " + self.game.stage)
-            # print("Players Turn: " + str(self.game.activePlayer))
-            # print(self.valid_tiles)
 
             if tile_clicked in self.valid_tiles:
                 if self.stage == 'PLACE':
@@ -67,7 +64,7 @@ class GUI:
                     self.movable_tiles = set()
                     for tile in self.valid_tiles:
                         self.movable_tiles.add(tile)
-                        self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR[0])
+                        self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)#HIGHLIGHT_COLOR[0])
                         self.moved_from_tile = tile_clicked
 
                 elif self.stage=='MOVE':
@@ -80,20 +77,38 @@ class GUI:
                         self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
                     
                     self.movable_tiles.remove(tile_clicked)
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], stipple='')
                     self.movable_tiles.add(self.moved_from_tile)
                     self.reset_tiles(self.movable_tiles)
 
                     self.buildable_tiles = set()
                     for tile in self.valid_tiles:
                         self.buildable_tiles.add(tile)
-                        self.canvas.itemconfig(self.tile_grid[tile], fill=HIGHLIGHT_COLOR[1])
+                        self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)#fill=HIGHLIGHT_COLOR[1])
                         
                 elif self.stage=='BUILD':
                     self.game.build(tile_clicked)
                     height = self.game.spaces[tile_clicked].height - 1
                     self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=BUILDING_COLORS[height])  
-                    self.buildable_tiles.remove(tile_clicked)
+                    #self.buildable_tiles.remove(tile_clicked)
                     self.reset_tiles(self.buildable_tiles)    
+
+                # can delete this
+                if not self.stage == 'PLACE':
+                    self.print_updated_status()
+
+    # can delete this function
+    def print_updated_status(self):
+        print("Current Player: " + self.game.currPlayer.name)
+        print("Player 1:")
+        print(self.game.player1.name)
+        print("Height Worker1: " + str(self.game.player1.workers[0].space.height))
+        print("Height Worker2: " + str(self.game.player1.workers[1].space.height))
+        print("Player 2:")
+        print(self.game.player2.name)
+        print("Height Worker1: " + str(self.game.player2.workers[0].space.height))
+        print("Height Worker2: " + str(self.game.player2.workers[1].space.height))
+        print()
 
     def init_tiles(self): #make 5x5 array of tiles and make them clickable
         self.canvas.bind
@@ -112,6 +127,7 @@ class GUI:
 
     def reset_tiles(self, tiles_to_reset):
         for tile in tiles_to_reset:
+            self.canvas.itemconfig(self.tile_grid[tile], stipple='')
             height = self.game.spaces[tile].height
             if height > 0:
                 self.canvas.itemconfig(self.tile_grid[tile], fill=BUILDING_COLORS[height - 1])
