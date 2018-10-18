@@ -1,5 +1,5 @@
 import Character
-# from uncle_gui import GUI
+import random
 
 def coord_to_pos(x, y):
     return int(y * 5 + x)
@@ -9,11 +9,22 @@ def pos_to_coord(pos):
     y = int((pos - x) / 5)
     return x, y
 
+def select_random_characters():
+    chars = Character.characterList
+    player1 = random.choice(chars)
+    player2 = random.choice(chars)
+    while player1 == player2:
+        player2 = random.choice(chars)
+    return player1, player2
+
 class Game:
     def __init__(self):
         self.spaces = [Space(i) for i in range(25)]
-        self.player1 = Character.Apollo()
-        self.player2 = Character.Artemis()
+        char1, char2 = select_random_characters()
+        player1 = getattr(Character, char1)
+        player2 = getattr(Character, char2)
+        self.player1 = player1()
+        self.player2 = player2()
         self.activePlayer = 1 # just an int 1 or 2
         self.currPlayer = self.player1
         self.stage = "PLACE" # "PLACE", "SELECT", "MOVE", "BUILD"
@@ -32,6 +43,12 @@ class Game:
         self.currPlayer = self.player1 if self.activePlayer == 1 else self.player2
 
     def valid_spaces(self, spaceClicked):
+        # if currPlayer.has_valid_spaces_override:
+        # currPlayer.valid_spaces(spaceClicked)
+        # else:
+        #                               or
+        # return currPlayer.valid_spaces(spaceClicked)
+
         x, y = pos_to_coord(spaceClicked)
         currSpace = self.spaces[spaceClicked]
         validList = set() #return all valid spaces in this list
@@ -151,9 +168,8 @@ class Space:
         self.inhabited = False
         self.inhabitant = None
 
-
 # game = Game()
-# gui = GUI(2,2)
+# gui = uncle_gui.GUI()
 # print(Character.characterList)
 # choose chars / random chars
 # game.place_workers(10)
