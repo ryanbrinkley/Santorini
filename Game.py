@@ -1,13 +1,12 @@
 import Character
 # from uncle_gui import GUI
-# from enum import Enum
 
 def coord_to_pos(x, y):
-    return int(x+5*y)
+    return int(y * 5 + x)
 
-def pos_to_coord(a):
-    x = int(a%5)
-    y = int((a-x)/5)
+def pos_to_coord(pos):
+    x = int(pos % 5)
+    y = int((pos - x) / 5)
     return x, y
 
 class Game:
@@ -15,21 +14,27 @@ class Game:
         self.spaces = [Space(i) for i in range(25)]
         self.player1 = Character.Apollo()
         self.player2 = Character.Artemis()
-        self.activePlayer = 1 # just an int
+        self.activePlayer = 1 # just an int 1 or 2
         self.currPlayer = self.player1
-        #self.stage = "PLACE" # Enum("PLACE", "SELECT", "MOVE", "BUILD")
-        self.stage = "PLACE"
+        self.stage = "PLACE" # "PLACE", "SELECT", "MOVE", "BUILD"
         self.gameOver = False
 
-    def check_game_over(self):
-        # check win/loss conditions
-        if not self.gameOver:
-            self.gameOver = True
+    def get_player_positions(self):
+        return self.player1.get_positions(), self.player2.get_positions()
+
+    def get_active_player(self):
+        return self.activePlayer
+
+    def get_stage(self):
+        return self.stage
+
+    def set_currPlayer(self):
+        self.currPlayer = self.player1 if self.activePlayer == 1 else self.player2
 
     def valid_spaces(self, spaceClicked):
         x, y = pos_to_coord(spaceClicked)
         currSpace = self.spaces[spaceClicked]
-        validList = set() #return all invalid spaces in this list
+        validList = set() #return all valid spaces in this list
         validRange = set()
 
         # edge checking
@@ -57,7 +62,8 @@ class Game:
                     if (space.inhabited == False):
                         validList.add(space.pos)
         elif self.stage == "SELECT":
-            pass
+            for i in range(self.currPlayer.numWorkers):
+                validList.add(self.currPlayer.workers[i].pos)
         elif self.stage == "MOVE":
             for i in range(5):
                 for j in range(5):
@@ -76,75 +82,49 @@ class Game:
         
 
     def place_workers(self, spaceClicked):
-        if spaceClicked in self.valid_spaces(spaceClicked):
-            n = self.currPlayer.workersLeftToPlace
+        gender = "G"
+        if self.currPlayer.workersLeftToPlace % 2 == 0:
+            gender = "B"
 
-            self.currPlayer.workersLeftToPlace -= 1
-            if self.currPlayer.workersLeftToPlace == 0:
-                if self.activePlayer == 2:
-                    self.stage = "SELECT"
-                self.activePlayer = (self.activePlayer % 2) + 1
-                self.set_currPlayer()
+        worker = Character.Worker(self.activePlayer, gender, self.spaces[spaceClicked])
+        self.currPlayer.workers.append(worker)
+        self.spaces[spaceClicked].inhabited = True
+        self.spaces[spaceClicked].inhabitant = worker
 
-            id = "G"
-            if n % 2 == 0:
-                id = "B"
-            worker = Character.Worker(id, self.spaces[spaceClicked])
-            self.currPlayer.workers.append(worker)
-            self.spaces[spaceClicked].inhabited = True
-            self.spaces[spaceClicked].inhabitant = worker
+        self.currPlayer.workersLeftToPlace -= 1
+        if self.currPlayer.workersLeftToPlace == 0:
+            if self.activePlayer == 2:
+                self.stage = "SELECT"
+            self.activePlayer = (self.activePlayer % 2) + 1
+            self.set_currPlayer()
 
     def select_worker(self, spaceClicked):
-        if spaceClicked in self.valid_spaces(spaceClicked):
-            self.currPlayer.selectedWorker = self.spaces[spaceClicked].inhabitant
-            self.stage = "MOVE"
+        self.currPlayer.selectedWorker = self.spaces[spaceClicked].inhabitant
+        self.stage = "MOVE"
 
-    def get_player_positions(self):
-        return self.player1.get_positions(), self.player2.get_positions()
+    def move_worker(self, spaceClicked):
+        self.currPlayer.selectedWorker.space.free()
+        self.spaces[spaceClicked].place(self.currPlayer.selectedWorker)
+        self.currPlayer.selectedWorker = None
+        self.stage = "BUILD"
 
-    def get_active_player(self):
-        return self.activePlayer
+    def build(self, spaceClicked):
+        self.spaces[spaceClicked].build()
+        self.activePlayer = (self.activePlayer % 2) + 1
+        self.set_currPlayer()
+        self.stage = "SELECT"
 
-    def get_stage(self):
-        return self.stage
+    def check_game_over(self):
+        #ToDo
+        if False:
+            self.gameOver = True
 
-    def set_currPlayer(self):
-        self.currPlayer = self.player1 if self.activePlayer == 1 else self.player2
-
-    def game_loop(self):
-        while not self.gameOver:
-            if self.activePlayer == 1:
-                print("Player 1's Turn")
-                # currPlayer = player1
-            elif self.activePlayer == 2:
-                print("Player 2's Turn")
-                # currPlayer = player2
-            
-            # Select Worker
-            print(self.valid_spaces(10)) #need 4, 9, 14
-            # Move
-            # activePlayer.check_available_moves(1, board)
-            # board.get_available_spaces()
-            # activePlayer.getMoveInput()
-
-            # Build
-            # activePlayer.check_available_builds(board)
-            # board.get_available_builds
-            # activePlayer.getBuildInput()
-            self.spaces[0].build()
-
-            # Current Positions (5 * y + x for 1d?)
-            # self.get_player_positions()
-
-            #print board
-            for i in range(5):
-                for j in range(5):
-                    print(self.spaces[i + (j * 5)].height, end=" ")
-                print()
-
-            self.activePlayer = (self.activePlayer % 2) + 1
-
-            self.check_game_over()
+#    def game_loop(self):
+#        print board
+#        for i in range(5):
+#            for j in range(5):
+#                print(self.spaces[i + (j * 5)].height, end=" ")
+#            print()
 
 class Space:
     def __init__(self, pos):
@@ -159,8 +139,6 @@ class Space:
     def build(self):
         if self.height < 4:
             self.height += 1
-        else:
-            print("Attempted to build on dome")
 
     def place(self, worker):
         if self.inhabited == False:
@@ -168,17 +146,15 @@ class Space:
             self.inhabitant = worker
             worker.space = self
             worker.pos = self.pos
-        else:
-            print("Attempted to place on inhabited space")
 
     def free(self):
         self.inhabited = False
         self.inhabitant = None
 
 
-game = Game()
+# game = Game()
 # gui = GUI(2,2)
-print(Character.characterList)
+# print(Character.characterList)
 # choose chars / random chars
-game.place_workers(10)
-game.game_loop()
+# game.place_workers(10)
+# game.game_loop()
