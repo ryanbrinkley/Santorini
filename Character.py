@@ -1,5 +1,3 @@
-# import Game
-
 characterList = [
     "Apollo", 
     "Artemis", 
@@ -11,6 +9,7 @@ class Character:
     def __init__(self):
         self.workers = []
         self.numWorkers = 2
+        self.workersLeftToPlace = self.numWorkers
         self.selectedWorker = None  
     
     def get_positions(self):
@@ -18,18 +17,14 @@ class Character:
         for i in range (self.numWorkers):
             posList.append(self.workers[i].pos)
         return posList
-        
 
 class Worker:
-    def __init__(self, id, space):
+    def __init__(self, player, gender, space):
+        self.player = player
         self.space = space
         self.pos = space.pos
-        self.id = id
+        self.gender = gender
         self.validMoves = None
-
-    def move(self, pos):
-        self.space = pos
-        # make board spaces unavailable / check build availables
 
 class Apollo(Character):
     def __init__(self):
