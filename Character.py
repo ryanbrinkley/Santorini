@@ -24,6 +24,13 @@ class Character:
             posList.append(self.workers[i].pos)
         return posList
 
+    #Override in specific characters for different move function
+    def move(self, space):
+        self.selectedWorker.space.free()
+        space.place(self.selectedWorker)
+        self.selectedWorker = None
+        return "BUILD"
+
 class Worker:
     def __init__(self, player, gender, space):
         self.player = player
@@ -47,7 +54,10 @@ class Apollo(Character):
         # opponent position = self's old position
         # make valid_spaces function a character function with possible override?
         # or just receive validList and alter it
-        # Ability time = Game stage?
+
+
+# Ability time = Game stage?
+
 
 class Artemis(Character):
     def __init__(self):
@@ -62,6 +72,15 @@ class Artemis(Character):
         # after move, allow move again
         # allow move to first move spot (like only moved once)
         # remove old position from valid list
+
+    def move(self, space):
+        self.selectedWorker.space.free()
+        space.place(self.selectedWorker)
+        self.selectedWorker = None
+        #return "SELECT"
+        return "BUILD"
+    
+        
 
 class Athena(Character):
     def __init__(self):
