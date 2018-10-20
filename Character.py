@@ -11,6 +11,14 @@ characterList = [
     "Prometheus"
 ]
 
+def coord_to_pos(x, y):
+    return int(y * 5 + x)
+
+def pos_to_coord(pos):
+    x = int(pos % 5)
+    y = int((pos - x) / 5)
+    return x, y
+
 class Character:
     def __init__(self):
         self.workers = []
@@ -18,26 +26,81 @@ class Character:
         self.workersLeftToPlace = self.numWorkers
         self.selectedWorker = None  
     
+    # Return positions of all of this character's workers on board
     def get_positions(self):
         posList = []
         for i in range (self.numWorkers):
             posList.append(self.workers[i].pos)
         return posList
 
-    #Override in specific characters for different move function
+    # Override in specific characters for different move function
     def move(self, space):
         self.selectedWorker.space.free()
         space.place(self.selectedWorker)
         self.selectedWorker = None
         return "BUILD"
 
+    def valid_place(self, spaces):
+        validList = set()
+        for space in spaces:
+            if space.inhabited == False:
+                validList.add(space.pos)
+        return validList
+
+    def valid_select(self):
+        validList = set()
+        for i in range(self.numWorkers):
+            validList.add(self.workers[i].pos)
+        return validList
+
+    # space is in reach / space is not too tall or domed / space is not inhabited
+    def valid_move(self, currSpace, spaces):
+        validList = set()
+        validRange = self.valid_edges(currSpace.pos)
+        for space in spaces:
+            if (space.pos in validRange and space.height - currSpace.height < 2 and 
+                    space.height != 4 and space.inhabited == False):
+                validList.add(space.pos)
+        return validList
+
+    # space is in reach / space is not domed / space is not inhabited
+    def valid_build(self, currSpace, spaces):
+        validList = set()
+        validRange = self.valid_edges(currSpace.pos)
+        for space in spaces:
+            if space.pos in validRange and not space.height == 4 and space.inhabited == False:
+                validList.add(space.pos)
+        return validList
+
+    def valid_edges(self, pos):
+        validRange = set()
+        x, y = pos_to_coord(pos)
+
+        if not x == 0:
+            validRange.add(coord_to_pos(x - 1, y))
+        if not y == 0:
+            validRange.add(coord_to_pos(x, y - 1))
+        if not x == 4:
+            validRange.add(coord_to_pos(x + 1, y))
+        if not y == 4:
+            validRange.add(coord_to_pos(x, y + 1))
+        if not x == 0 and not y == 0:
+            validRange.add(coord_to_pos(x - 1, y - 1))
+        if not x == 4 and not y == 0:
+            validRange.add(coord_to_pos(x + 1, y - 1))
+        if not x == 0 and not y == 4:
+            validRange.add(coord_to_pos(x - 1, y + 1))
+        if not x == 4 and not y == 4:
+            validRange.add(coord_to_pos(x + 1, y + 1))
+
+        return validRange
+
 class Worker:
-    def __init__(self, player, gender, space):
-        self.player = player
-        self.space = space
-        self.pos = space.pos
+    def __init__(self, character, gender):
+        self.character = character
+        self.space = None
+        self.pos = None
         self.gender = gender
-        self.validMoves = None
 
 class Apollo(Character):
     def __init__(self):
@@ -47,16 +110,29 @@ class Apollo(Character):
         self.description = ("Your Move : Your worker may move into an opponent worker's space by "
                             "forcing their worker to the space you just vacated.")
     
-    def ability(self):
-        pass
-        # valid space on opponent chars
-        # if space contains opponent
-        # opponent position = self's old position
-        # make valid_spaces function a character function with possible override?
-        # or just receive validList and alter it
+    # add opponent inhabited spaces from valid list in move
+    def valid_move(self, currSpace, spaces):
+        validList = set()
+        validRange = self.valid_edges(currSpace.pos)
+        for space in spaces:
+            if (space.pos in validRange and space.height - currSpace.height < 2 and 
+                    space.height != 4 and space.inhabited == False):
+                validList.add(space.pos)
+            if (space.pos in validRange and space.height - currSpace.height < 2 and 
+                    space.height != 4 and space.inhabited == True):
+                if space.inhabitant.character != self:
+                    validList.add(space.pos)
+        return validList
 
+    # switch places with opponent workers
+    def move(self, space):
+        if space.inhabited == True:
+            self.selectedWorker.space.place(space.inhabitant)
+        else:
+            self.selectedWorker.space.free()
 
-# Ability time = Game stage?
+        space.place(self.selectedWorker)
+        return "BUILD"
 
 
 class Artemis(Character):
@@ -66,21 +142,46 @@ class Artemis(Character):
         self.difficulty = "Simple"
         self.description = ("Your Move: Your worker may move one additional time, but not back to "
                             "its initial space.")
+        self.numberOfMoves = 0
+        self.prevTile = None
+        self.newTile = None
 
-    def ability(self):
-        pass
-        # after move, allow move again
-        # allow move to first move spot (like only moved once)
-        # remove old position from valid list
+    def valid_move(self, currSpace, spaces):
+        if self.numberOfMoves == 0:
+            self.prevTile = self.selectedWorker.pos
+        else:
+            self.newTile = self.selectedWorker.pos
 
+        validList = set()
+        validRange = self.valid_edges(currSpace.pos)
+        for space in spaces:
+            if (space.pos in validRange and space.height - currSpace.height < 2 and 
+                    space.height != 4 and space.inhabited == False):
+                validList.add(space.pos)
+        
+        if self.prevTile != None and self.prevTile in validList:
+            validList.remove(self.prevTile)
+            self.prevTile = None
+
+        if self.newTile != None:
+            validList.add(self.newTile)
+            self.newTile = None
+
+        return validList
+        
     def move(self, space):
         self.selectedWorker.space.free()
         space.place(self.selectedWorker)
-        self.selectedWorker = None
-        #return "SELECT"
-        return "BUILD"
-    
-        
+
+        self.numberOfMoves += 1
+
+        if self.numberOfMoves == 2:
+            self.numberOfMoves = 0
+            self.selectedWorker = None
+            return "BUILD"
+        else:
+            return "MOVE"
+
 
 class Athena(Character):
     def __init__(self):
