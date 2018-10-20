@@ -16,14 +16,14 @@ class GUI:
     '''
     def __init__(self):
         self.tile_grid = [0 for i in range(25)] 
-        self.current_player_locations = []
+        # self.current_player_locations = []
         self.game = Game()
         self.stage = self.game.stage
         self.moved_from_tile = 0
         self.number_player1_workers = self.game.player1.numWorkers
         self.number_player2_workers = self.game.player2.numWorkers
         self.total_workers = self.number_player1_workers + self.number_player2_workers
-        self.initial_placement = True
+        # self.initial_placement = True
         self.initial_placement_p1 = self.number_player1_workers
         self.initial_placement_p2 = self.number_player2_workers
         self.root = tk.Tk()
@@ -38,77 +38,66 @@ class GUI:
 #        if self.canvas.find_withtag(CURRENT):
 #            self.canvas.itemconfig(CURRENT, fill="SpringGreen3")   
   
-    def click_tile(self,event):
+    def click_tile(self, event):
         if self.canvas.find_withtag(CURRENT): 
             tile_clicked = event.widget.find_closest(event.x,event.y)[0] - 1
-            self.stage = self.game.get_stage()
+            self.stage = self.game.stage
+            print(tile_clicked)
 
             if self.stage == "PLACE" or self.stage == "SELECT":
                 self.valid_tiles = self.game.valid_spaces(tile_clicked)
-
-            print(tile_clicked)
-
+        
             if tile_clicked in self.valid_tiles:
                 if self.stage == 'PLACE':
+                    self.game.place_workers(tile_clicked)
                     if self.initial_placement_p1 > 0:
                             self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
                             self.initial_placement_p1 -= 1
                     elif self.initial_placement_p2 > 0:
                             self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
                             self.initial_placement_p2 -= 1
-                    self.game.place_workers(tile_clicked)
 
                 elif self.stage=='SELECT':
                     self.game.select_worker(tile_clicked)
                     self.valid_tiles = self.game.valid_spaces(tile_clicked)
-                    self.movable_tiles = set()
-                    for tile in self.valid_tiles:
-                        self.movable_tiles.add(tile)
-                        self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)#HIGHLIGHT_COLOR[0])
-                        self.moved_from_tile = tile_clicked
+                    self.moved_from_tile = tile_clicked
+                    self.set_highlighted_positions()
 
                 elif self.stage=='MOVE':
                     self.game.move_worker(tile_clicked)
                     self.valid_tiles = self.game.valid_spaces(tile_clicked)
-
-                    if self.game.activePlayer == 1:
-                        self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P1'])
-                    else:
-                        self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=PLAYER_COLORS['P2'])
-                    
-                    self.movable_tiles.remove(tile_clicked)
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], stipple='')
-                    self.movable_tiles.add(self.moved_from_tile)
-                    self.reset_tiles(self.movable_tiles)
-
-                    self.buildable_tiles = set()
-                    for tile in self.valid_tiles:
-                        self.buildable_tiles.add(tile)
-                        self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)#fill=HIGHLIGHT_COLOR[1])
                         
+                    # Reset the tiles to normal state
+                    self.highlighted_tiles.remove(tile_clicked)
+                    self.highlighted_tiles.add(self.moved_from_tile)
+                    self.reset_tiles(self.highlighted_tiles)
+                    self.canvas.itemconfig(self.tile_grid[tile_clicked], stipple='')
+
+                    self.moved_from_tile = tile_clicked
+                    self.set_player_positions()
+                    self.set_highlighted_positions()
+
                 elif self.stage=='BUILD':
-                    self.game.build(tile_clicked)
-                    height = self.game.spaces[tile_clicked].height - 1
-                    self.canvas.itemconfig(self.tile_grid[tile_clicked], fill=BUILDING_COLORS[height])  
-                    #self.buildable_tiles.remove(tile_clicked)
-                    self.reset_tiles(self.buildable_tiles)    
+                    self.game.build(tile_clicked)  
+                    self.reset_tiles(self.highlighted_tiles)
 
-                # can delete this
-                if not self.stage == 'PLACE':
-                    self.print_updated_status()
+                # if not self.stage == 'PLACE':
+                #     self.print_updated_status()
 
-    # can delete this function
-    def print_updated_status(self):
-        print("Current Player: " + self.game.currPlayer.name)
-        print("Player 1:")
-        print(self.game.player1.name)
-        print("Height Worker1: " + str(self.game.player1.workers[0].space.height))
-        print("Height Worker2: " + str(self.game.player1.workers[1].space.height))
-        print("Player 2:")
-        print(self.game.player2.name)
-        print("Height Worker1: " + str(self.game.player2.workers[0].space.height))
-        print("Height Worker2: " + str(self.game.player2.workers[1].space.height))
-        print()
+
+    # can delete all this commented garbage
+
+    # def print_updated_status(self):
+    #     print("Current Player: " + self.game.currPlayer.name)
+    #     print("Player 1:")
+    #     print(self.game.player1.name)
+    #     print("Height Worker1: " + str(self.game.player1.workers[0].space.height))
+    #     print("Height Worker2: " + str(self.game.player1.workers[1].space.height))
+    #     print("Player 2:")
+    #     print(self.game.player2.name)
+    #     print("Height Worker1: " + str(self.game.player2.workers[0].space.height))
+    #     print("Height Worker2: " + str(self.game.player2.workers[1].space.height))
+    #     print()
 
     def init_tiles(self): #make 5x5 array of tiles and make them clickable
         self.canvas.bind
@@ -125,6 +114,26 @@ class GUI:
         self.canvas.bind("<Button-1>", self.click_tile)
         self.root.wm_title("Santoroni")
 
+    # Set all tiles to appropriate player colors
+    # had to make this due to powers like switching player positions
+    def set_player_positions(self):
+        p1_workers, p2_workers = self.game.get_player_positions()
+
+        for position in p1_workers:
+            self.canvas.itemconfig(self.tile_grid[position], fill=PLAYER_COLORS['P1'])
+
+        for position in p2_workers:
+            self.canvas.itemconfig(self.tile_grid[position], fill=PLAYER_COLORS['P2'])
+
+    # highlight tiles with stipple, need better highlight method but best I could do 
+    # for now
+    def set_highlighted_positions(self):
+        self.highlighted_tiles = set()
+        for tile in self.valid_tiles:
+            self.highlighted_tiles.add(tile)
+            self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)
+
+    # Reset tiles passed to function to default board colors / building colors
     def reset_tiles(self, tiles_to_reset):
         for tile in tiles_to_reset:
             self.canvas.itemconfig(self.tile_grid[tile], stipple='')
