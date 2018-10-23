@@ -18,7 +18,7 @@ class GUI:
     '''
     def __init__(self):
         self.tile_grid = [0 for i in range(25)]
-        self.building_sides = [[0 for j in range(6)]for i in range(25)]
+        self.building_sides = [[0 for j in range(8)]for i in range(25)]
         self.game = Game()
         self.stage = self.game.stage
         self.moved_from_tile = 0
@@ -79,8 +79,8 @@ class GUI:
 
                     self.moved_from_tile = tile_clicked
                     self.set_player_positions()
-                    self.set_highlighted_positions()
                     self.order()
+                    self.set_highlighted_positions()
 
                 elif self.stage=='BUILD':
                     self.game.build(tile_clicked)  
@@ -132,6 +132,7 @@ class GUI:
         for tile in self.valid_tiles:
             self.highlighted_tiles.add(tile)
             self.canvas.itemconfig(self.tile_grid[tile], stipple=HIGHLIGHT_COLOR)
+            self.canvas.tag_raise(self.tile_grid[tile])
     def transform_to_isometric(self):
         for tile in self.tile_grid:
             current = self.canvas.coords(tile)
@@ -155,21 +156,35 @@ class GUI:
     def building_tile(self,tile):
         x = self.canvas.coords(self.tile_grid[tile])
         height = self.game.spaces[tile].height
+        for i in range(1,len(x),2):
+            x[i] -= BUILDING_HEIGHT
         if height != 4: #not a dome
-            for i in range(1,len(x),2):
-                x[i] -= BUILDING_HEIGHT
             self.canvas.coords(self.tile_grid[tile],*x)
             for i in range(1,len(x),2):
                 x[i] += BUILDING_HEIGHT
-            self.canvas.itemconfig(self.tile_grid[tile],fill='white smoke')
-            self.canvas.itemconfig(self.tile_grid[tile],tags='building')
+            self.canvas.itemconfig(self.tile_grid[tile],fill='white smoke',tags='building')
             y = self.canvas.coords(self.tile_grid[tile])
             right_side = [y[2],y[3],x[2],x[3],x[4],x[5],y[4],y[5]]
             left_side = [y[4],y[5],x[4],x[5],x[6],x[7],y[6],y[7]]
             self.building_sides[tile][(height-1)*2] = self.canvas.create_polygon(*right_side,fill='gainsboro',outline='black',tags='building')
             self.building_sides[tile][(height-1)*2+1] = self.canvas.create_polygon(*left_side,fill='snow',outline='black',tags ='building')
         elif height == 4:
-            pass #make a dome, figure out later lawl
+            self.canvas.coords(self.tile_grid[tile],*x)
+            for i in range(1,len(x),2):
+                x[i] += BUILDING_HEIGHT
+            self.canvas.itemconfig(self.tile_grid[tile],fill='blue',tags='building')
+            y = self.canvas.coords(self.tile_grid[tile])
+            right_side = [y[2],y[3],x[2],x[3],x[4],x[5],y[4],y[5]]
+            left_side = [y[4],y[5],x[4],x[5],x[6],x[7],y[6],y[7]]
+            self.building_sides[tile][(height-1)*2] = self.canvas.create_polygon(*right_side,fill='blue',outline='black',tags='building')
+            self.building_sides[tile][(height-1)*2+1] = self.canvas.create_polygon(*left_side,fill='blue',outline='black',tags ='building') 
+            #del x[6:8]
+            #del x[2:4]
+            #x[0] = x[0] - 70
+            #x[1] += 10
+            #x[2] = x[2] + 70
+            #x[3] += 40
+            #self.building_sides[tile][(height-1)*2] = self.canvas.create_arc(*x, fill='blue', extent=180,outline='black')
     def order(self):
         for tile in range(25):
             height = self.game.spaces[tile].height
